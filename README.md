@@ -6,4 +6,4 @@
 |-----------------------------------------------------|------------------------------------|------------------|
 | [Luka Obradović](https://github.com/lobradovic)     | Ranjiva aplikacija                 | `vuln`           |
 | [Vukadin Lazarević](https://github.com/LazarevicV)  | Napadačka skripta + prezentacija   | `vuln`           |
-| [Luka Mihailović](https://github.com/lmihailovic)   | Ranjiva aplikacija + dokumentacija | `fix` + `master` |
+| [Luka Mihailović](https://github.com/lmihailovic)   | Bezbedna aplikacija + dokumentacija | `fix` + `master` |
