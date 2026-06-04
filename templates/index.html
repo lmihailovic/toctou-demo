@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../styles/style.css">
+    <title>Banking system</title>
+</head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/add-funds">Add Funds</a></li>
+                    <li><a href="/admin">Admin</a></li>
+                    <li><a href="/logout">Logout</a></li>
+                </ul>
+            </div>
+
+            <div class="user-card">
+                <div class="user-info">
+                    <h3>
+                        Welcome, {{.CurrentUser.FirstName}} {{.CurrentUser.LastName}}
+                    </h3>
+                    <p class="balance">{{printf "%.2f" .CurrentUser.Balance}}</p>
+
+                    {{if .Error}}
+                    <div class="flash flash-error">{{.Error}}</div>
+                    {{end}}
+                    {{if .Success}}
+                    <div class="flash flash-success">{{.Success}}</div>
+                    {{end}}
+                </div>
+                <div class="form">
+                    <form action="/transfer" method="post">
+                        <div class="form-field">
+                            <label for="">To: </label>
+                            <select name="recipient_id" id="recipient_id">
+                                {{range .Users}}
+                                <option value="{{.ID}}">{{.FirstName}} {{.LastName}}</option>
+                                {{end}}
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label for="">Amount: </label>
+                            <input type="number" name="amount" id="amount"  min="0.01" step="0.01" placeholder="0.00" required>
+                        </div>
+                        <div class="form-field">
+                            <button class="submit-btn">Send</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
