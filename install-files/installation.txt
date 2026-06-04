@@ -1,0 +1,31 @@
+===APP INSTALLATION===
+
+1. Make sure you have Docker installed.
+2. Run command: docker pull postgres:latest
+3. Run command: docker run --name toctou_demo -e POSTGRES_PASSWORD=admin -e POSTGRES_USER=postgres -e POSTGRES_DB=toctou -p 5433:5432 -d postgres
+4. Run command: docker exec -it toctou_demo psql -U postgres
+
+Note: make sure port 5433 is available on host machine.
+
+5. In terminal/command prompt, run command: CREATE DATABASE IF NOT EXISTS toctou
+6. In terminal/command prompt, run command: \toctou
+7. Copy script from installation.txt that contains table definitions and initial seed data
+
+Now we have our database ready for use.
+
+Note #2: Make sure Go is installed on host PC.
+
+App is hosted on localhost:8080
+Login credentials are following:
+
+Admin account:
+    email: lobradovic@mail.com
+    password: password1
+
+Client accounts:
+    email: lmihailovic@mail.com
+    password: password2
+
+    email: vlazarevic@mail.com
+    password: password3
+
