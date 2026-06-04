@@ -11,7 +11,9 @@
                 <ul>
                     <li><a href="/">Home</a></li>
                     <li><a href="/add-funds">Add Funds</a></li>
+                    {{if .CurrentUser.IsAdmin}}
                     <li><a href="/admin">Admin</a></li>
+                    {{end}}
                     <li><a href="/logout">Logout</a></li>
                 </ul>
             </div>
