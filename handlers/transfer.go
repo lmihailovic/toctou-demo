@@ -47,7 +47,7 @@ func TransferHandler(w http.ResponseWriter, r *http.Request) {
 
 	//namerno smo dodali ovde sleep na thread
 	//da bi bilo lakse da se dogodi toctou
-	time.Sleep(100 * time.Millisecond)
+	// time.Sleep(100 * time.Millisecond)
 
 	_, err = db.Exec(`UPDATE users SET balance = balance - $1 WHERE id = $2`, amount, senderID)
 	if err != nil {
