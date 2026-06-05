@@ -1,86 +1,176 @@
-# Docker pokretanje aplikacije
+# Docker i Go pokretanje aplikacije od nule
 
-Dockerfile za aplikaciju se nalazi u `app/Dockerfile`. On koristi multi-stage build, sto znaci da se aplikacija prvo kompajlira u posebnom Go image-u, a zatim se u finalni image kopira samo gotov binarni fajl i fajlovi koji su potrebni za rad aplikacije.
+Ovo su koraci za scenario kao da je projekat tek preuzet sa GitHub-a. Setup podize PostgreSQL bazu u Dockeru, priprema Go dependency-je i pokrece aplikaciju.
 
-## Sta radi Dockerfile
+## Preduslovi
 
-Prva faza koristi image `golang:1.26-alpine` i sluzi za build aplikacije:
+Instaliraj:
 
-- postavlja radni direktorijum na `/src`
-- kopira `go.mod` i `go.sum`
-- preuzima Go dependency-je komandom `go mod download`
-- kopira izvorni kod aplikacije: `main.go`, `handlers/`, `middleware/`
-- kopira staticke i template fajlove: `templates/` i `styles/`
-- kompajlira aplikaciju u Linux binarni fajl `/bin/toctou-demo`
+- Docker Desktop ili Docker Engine sa Docker Compose podrskom
+- Go verziju koja odgovara projektu, prema `go.mod`: `1.26.4`
+- Git
 
-Druga faza koristi manji image `alpine:3.22` i sluzi za pokretanje aplikacije:
-
-- postavlja radni direktorijum na `/app`
-- kopira kompajliranu aplikaciju iz prve faze
-- kopira `templates/` i `styles/`, jer ih aplikacija cita u runtime-u
-- otvara port `8080`
-- pokrece aplikaciju komandom `./toctou-demo`
-
-## Build Docker image-a
-
-Komanda se pokrece iz korena projekta:
+Provera instalacije:
 
 ```bash
-docker build -f app/Dockerfile -t toctou-demo-app .
+docker --version
+docker compose version
+go version
+git --version
 ```
 
-Opcije u komandi:
-
-- `-f app/Dockerfile` govori Docker-u gde se nalazi Dockerfile
-- `-t toctou-demo-app` daje ime image-u
-- `.` znaci da je build context koren projekta
-
-Build context mora biti koren projekta zato sto Dockerfile kopira fajlove kao sto su `go.mod`, `main.go`, `handlers/`, `templates/` i `styles/`.
-
-## Pokretanje baze
-
-Aplikacija koristi PostgreSQL bazu. Ako Postgres kontejner jos nije napravljen, moze da se pokrene ovako:
+## Kloniranje projekta
 
 ```bash
-docker run --name toctou_demo \
-  -e POSTGRES_PASSWORD=admin \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_DB=toctou \
-  -p 5433:5432 \
-  -d postgres
+git clone <URL_REPOZITORIJUMA>
+cd toctou-demo
 ```
 
-Ako kontejner vec postoji, ali je zaustavljen, pokrece se ovako:
+Sve naredne komande pokrecu se iz korena projekta, gde se nalaze `go.mod`, `main.go`, `docker-compose.yml` i `app/Dockerfile`.
+
+## Priprema Go okruzenja
+
+Go dependency-ji su definisani u `go.mod` i `go.sum`. Preuzimaju se komandom:
 
 ```bash
-docker start toctou_demo
+go mod download
 ```
 
-## Pokretanje aplikacije
-
-Kada je baza pokrenuta, aplikacija se pokrece komandom:
+Ako zelis da proveris da li se aplikacija lokalno kompajlira:
 
 ```bash
-docker run --rm -p 8080:8080 \
-  -e 'DATABASE_URL=host=host.docker.internal port=5433 user=postgres password=admin dbname=toctou sslmode=disable' \
-  toctou-demo-app
+go build .
 ```
 
-Opcije u komandi:
+Ovo proverava Go okruzenje na host masini. Za Docker pokretanje aplikacije nije neophodno da imas lokalno preuzete dependency-je, jer ih Dockerfile preuzima unutar build kontejnera, ali je korisno za razvoj i pokretanje `go run .`.
 
-- `--rm` brise aplikacioni kontejner kada se zaustavi
-- `-p 8080:8080` mapira port aplikacije na host masinu
-- `-e DATABASE_URL=...` prosledjuje connection string za PostgreSQL bazu
-- `host=host.docker.internal` omogucava aplikacionom kontejneru da pristupi Postgresu koji je mapiran na host port `5433`
+## Pokretanje preko Docker Compose-a
 
-Nakon pokretanja, aplikacija je dostupna na:
+Najjednostavniji nacin je da Docker Compose podigne i bazu i aplikaciju:
 
-```text
-http://localhost:8080
+```bash
+docker compose up --build
 ```
 
-Login stranica je dostupna na:
+Ova komanda radi sledece:
+
+- pokrece PostgreSQL kontejner `toctou_demo_db`
+- kreira bazu `toctou`
+- izvrsava inicijalni SQL iz `app/db/schema.sql`
+- build-uje Go aplikaciju preko `app/Dockerfile`
+- pokrece aplikacioni kontejner `toctou_demo_app`
+- izlozi aplikaciju na `http://localhost:8080`
+- izlozi PostgreSQL na host portu `5433`
+
+Compose koristi `postgres:16-alpine`, da bi verzija baze bila stabilna i da se ne bi slucajno promenila pri sledecem pokretanju.
+
+Kada se u logu aplikacije pojavi poruka da je server pokrenut, otvori:
 
 ```text
 http://localhost:8080/login
 ```
+
+## Login podaci
+
+Admin nalog:
+
+```text
+email: lobradovic@mail.com
+password: password1
+```
+
+Korisnicki nalozi:
+
+```text
+email: lmihailovic@mail.com
+password: password2
+
+email: vlazarevic@mail.com
+password: password3
+```
+
+## Korisne Docker komande
+
+Pokretanje u pozadini:
+
+```bash
+docker compose up --build -d
+```
+
+Prikaz logova:
+
+```bash
+docker compose logs -f
+```
+
+Zaustavljanje kontejnera bez brisanja baze:
+
+```bash
+docker compose down
+```
+
+Potpuno resetovanje baze i ponovno izvrsavanje `app/db/schema.sql`:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+Ulazak u PostgreSQL shell:
+
+```bash
+docker compose exec db psql -U postgres -d toctou
+```
+
+Primer provere podataka u bazi:
+
+```sql
+SELECT id, email, balance FROM users ORDER BY id;
+SELECT id, sender_id, recipient_id, amount, timestamp FROM transfers ORDER BY id;
+```
+
+## Lokalno pokretanje Go aplikacije uz Docker bazu
+
+Ako hoces da bazu drzis u Dockeru, a aplikaciju pokrenes lokalno kroz Go, podigni samo bazu:
+
+```bash
+docker compose up -d db
+```
+
+Zatim pokreni aplikaciju lokalno:
+
+```bash
+DATABASE_URL='host=localhost port=5433 user=postgres password=admin dbname=toctou sslmode=disable' go run .
+```
+
+Aplikacija ce biti dostupna na:
+
+```text
+http://localhost:8080/login
+```
+
+Napomena: ako `DATABASE_URL` nije postavljen, aplikacija vec ima podrazumevani connection string za lokalni Postgres na `localhost:5433`, tako da moze da radi i samo:
+
+```bash
+go run .
+```
+
+## Sta radi Dockerfile
+
+Dockerfile za aplikaciju nalazi se u `app/Dockerfile` i koristi multi-stage build.
+
+Prva faza koristi Go image i:
+
+- postavlja radni direktorijum na `/src`
+- kopira `go.mod` i `go.sum`
+- preuzima Go dependency-je komandom `go mod download`
+- kopira `main.go`, `handlers/`, `middleware/`, `templates/` i `styles/`
+- kompajlira aplikaciju u Linux binarni fajl `/bin/toctou-demo`
+
+Druga faza koristi manji Alpine image i:
+
+- postavlja radni direktorijum na `/app`
+- kopira gotov binarni fajl
+- kopira `templates/` i `styles/`, jer ih aplikacija cita u runtime-u
+- otvara port `8080`
+- pokrece aplikaciju komandom `./toctou-demo`
