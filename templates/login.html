@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../styles/style.css">
+    <title>Login</title>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <ul>
+            <li><a href="login.html">Login</a></li>
+        </ul>
+    </div>
+
+    <div class="user-card">
+
+        <div class="user-info">
+            <h3>Login</h3>
+            <p>Enter your credentials</p>
+        </div>
+
+        <form class="form" action="/login" method="POST">
+            {{if .Error}}
+            <div class="f">{{.Error}}</div>
+            {{end}}
+
+            <div class="form-field">
+                <label for="email">Username</label>
+                <input type="text" id="email" name="email" required>
+            </div>
+
+            <div class="form-field">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <div class="form-field">
+                <button type="submit" class="submit-btn">Login</button>
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>
