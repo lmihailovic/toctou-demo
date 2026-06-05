@@ -1,19 +1,25 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"toctou-demo/main/middleware"
 )
+
+var mu sync.Mutex
 
 func TransferHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+
+	// mutex osigurava da samo jedna go rutina moze da udje u ovaj kod u bilo kom datom trenutku
+	mu.Lock()
+	defer mu.Unlock()
 
 	session, _ := middleware.Store.Get(r, "session")
 	senderID := session.Values["user_id"].(int)
@@ -45,30 +51,45 @@ func TransferHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//namerno smo dodali ovde sleep na thread
-	//da bi bilo lakse da se dogodi toctou
-	// time.Sleep(100 * time.Millisecond)
-
-	_, err = db.Exec(`UPDATE users SET balance = balance - $1 WHERE id = $2`, amount, senderID)
+	// implementirana SQL transakcija radi ocuvanja konzistentnosti podataka
+	tx, err := db.Begin()
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 
-	_, err = db.Exec(`UPDATE users SET balance = balance + $1 WHERE id = $2`, amount, recipientID)
+	_, err = tx.Exec(
+		`UPDATE users SET balance = balance - $1 WHERE id = $2`, amount, senderID)
 	if err != nil {
+		tx.Rollback()
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 
-	_, err = db.Exec(
+	_, err = tx.Exec(
+		`UPDATE users SET balance = balance + $1 WHERE id = $2`, amount, recipientID)
+	if err != nil {
+		tx.Rollback()
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	_, err = tx.Exec(
 		`INSERT INTO transfers (sender_id, recipient_id, amount, timestamp) VALUES ($1, $2, $3, $4)`,
 		senderID, recipientID, amount, time.Now(),
 	)
 	if err != nil {
+		tx.Rollback()
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/?success=Transfer successful"), http.StatusSeeOther)
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	http.Redirect(w, r, "/?success=Transfer successful", http.StatusSeeOther)
 }
