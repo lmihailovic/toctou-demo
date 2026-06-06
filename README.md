@@ -6,13 +6,33 @@ A program is vulnerable to a TOCTOU race condition if it does the following:
 1. Checks some property or validates some data
 2. Takes some action based on this information
 
+## The problem
+
+Why does this happen?
+
+```
+Request A: SELECT balance -> 500 
+Request B: SELECT balance -> 500    (both see the same balance)
+Request A: UPDATE balance -500
+Request B: UPDATE balance -500      (both update the balance)
+
+Results: -500
+```
+
+In short, the issue arises in the period between when a transfer checks the
+balance and when it updates the balance.
+
+It is possible to create a race condition by sending parallel requests, where
+they all see the initial balance, and later all update the balance as if they
+were the only request. This creates a problem when only some requests
+would be able to successfully execute, due to balance hitting zero at some
+point.
+
 ## The demonstration
 
 This demo showcases a _double spend_ vulnerability.
 The system is exploited by several transactions that are executed in parallel.
 This results in the ability to spend non-existing funds.
-
-For example, if a user has a balance of 500, two parallel transfers can result in the total transfer of 1000, and the user's balance becoming -500.
 
 ### The vulnerable application
 
@@ -78,7 +98,8 @@ if err != nil {
 return
 }
 ```
-Code snippet 1: The core logic for transferring funds.
+Code snippet 1: The core logic for transferring funds using transactions. Note
+that this code is still vulnerable to the race condition.
 
 Transactions have been added in the `fix` branch, ensuring the atomicity of the transfers, and as a surface level mitigation.
 
@@ -100,6 +121,12 @@ func TransferHandler(w http.ResponseWriter, r *http.Request) {
 	// ...
 ```
 Code snippet 2: The utilisation of `sync.Mutex` in `handlers/transfer.go`, preventing the race condition. 
+
+It should be noted that `sync.Mutex` is not the ideal solution, since it offers
+protection against race conditions in a single process.
+
+Production environments with multiple instances of the application (like with
+load balancers) should use more rigorous solutions, like database-level locks.
 
 ### The exploit
 
@@ -184,8 +211,8 @@ docker compose up --build
 4. Log into the application to make sure everything works as expected.
 5. Start the `exploit.go` script (either as a binary executable or via `go run`)
 
-The script will fail to double spend, and won't be able to make the attacker's balance go into negative numbers.
-By checking into the `vuln` branch and running the exploit script, you will be able to double spend and have negative balances.
+On the `fix` branch, the script will fail to double spend, and won't be able to make the attacker's balance go into negative numbers.
+By running the exploit script on the `vuln` branch, you will be able to double spend and have negative balances.
 
 ### Login data
 
