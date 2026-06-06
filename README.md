@@ -95,7 +95,7 @@ err = tx.Commit()
 if err != nil {
     tx.Rollback()
     http.Redirect(w, r, "/", http.StatusSeeOther)
-return
+    return
 }
 ```
 Code snippet 1: The core logic for transferring funds using transactions. Note
