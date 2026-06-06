@@ -103,6 +103,26 @@ Code snippet 2: The utilisation of `sync.Mutex` in `handlers/transfer.go`, preve
 
 ### The exploit
 
+```
+$ exploit -h
+Usage of ./exploit:
+  -amount string
+        amount to transfer in each request (default "500")
+  -email string
+        attacker account email (default "lmihailovic@mail.com")
+  -password string
+        attacker account password (default "password2")
+  -recipient string
+        recipient user id (default "3")
+  -requests int
+        number of concurrent transfer requests (default 100)
+  -timeout duration
+        HTTP client timeout (default 10s)
+  -url string
+        base URL of the vulnerable application (default "http://localhost:8080")
+```
+Code snippet 3: The exploit script and its options.
+
 The race condition is exploited by creating a large number of parallel transfer requests.
 
 ```go
@@ -135,16 +155,59 @@ func runRace(client *http.Client, cfg config) (int64, int64) {
 	return successful.Load(), failed.Load()
 }
 ```
-Code snippet 3: Function in `attack/exploit.go` which creates the race condition.
+Code snippet 4: Function in `attack/exploit.go` which creates the race condition.
 
 ## Running the demo
 
-here be dragons.
+Make sure you have Docker and Git installed.
+
+Steps:
+1. Clone the repository and `cd` into it:
+```shell
+git clone https://github.com/lmihailovic/toctou-demo/ && cd toctou-demo/
+```
+
+3. Switch to the desired branch (`vuln` or `fix`):
+```shell
+git checkout vuln 
+```
+```shell
+git checkout fix
+```
+
+2. Start the database and the application:
+```shell
+docker compose up --build
+```
+
+3. Upon receiving the `Connection successful` and `Server started` messages, visit the application at `http://localhost:8080`.
+4. Log into the application to make sure everything works as expected.
+5. Start the `exploit.go` script (either as a binary executable or via `go run`)
+
+The script will fail to double spend, and won't be able to make the attacker's balance go into negative numbers.
+By checking into the `vuln` branch and running the exploit script, you will be able to double spend and have negative balances.
+
+### Login data
+
+Admin account:
+```
+email: lobradovic@mail.com
+password: password1
+```
+
+User accounts:
+```
+email: lmihailovic@mail.com
+password: password2
+
+email: vlazarevic@mail.com
+password: password3
+```
 
 ## Contributors
 
-| Name                                                | Task                             | Branch           |
-|-----------------------------------------------------|----------------------------------|------------------|
-| [Luka Obradović](https://github.com/lobradovic)    | Vulnerable application           | `vuln`           |
-| [Vukadin Lazarević](https://github.com/LazarevicV) | Exploit script                   | `vuln`           |
-| [Luka Mihailović](https://github.com/lmihailovic)   | Safe application + documentation | `fix` + `master` |
+| Name                                               | Task                                                         | Branch |
+|----------------------------------------------------|--------------------------------------------------------------|--------|
+| [Luka Obradović](https://github.com/lobradovic)    | Vulnerable application                                       | `vuln` |
+| [Vukadin Lazarević](https://github.com/LazarevicV) | Exploit script + containerization + instructions for running | `vuln` |
+| [Luka Mihailović](https://github.com/lmihailovic)  | Safe application + documentation                             | `fix`  |
