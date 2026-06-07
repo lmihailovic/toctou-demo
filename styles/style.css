@@ -1,0 +1,148 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background-color: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+}
+
+.container {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    background-color: #111827;
+    padding: 15px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.header ul {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+}
+
+.header a {
+    text-decoration: none;
+    color: #e2e8f0;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.header a:hover {
+    color: #38bdf8;
+}
+
+.user-card {
+    background-color: #111827;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    max-width: 640px;
+    margin:0 auto;
+}
+
+.user-info h3 {
+    margin-bottom: 10px;
+}
+
+.balance {
+    font-size: 24px;
+    font-weight: bold;
+    color: #22c55e;
+}
+
+.form {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+select,
+input {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background-color: #0f172a;
+    color: #e2e8f0;
+    outline: none;
+}
+
+select:focus,
+input:focus {
+    border-color: #38bdf8;
+}
+
+.submit-btn {
+    padding: 10px;
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+    margin-top:2em;
+}
+
+.submit-btn:hover {
+    background-color: #1d4ed8;
+}
+/* ADMIN TABLE */
+.transactions {
+    margin-top: 20px;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #0f172a;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+thead {
+    background-color: #111827;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #1f2937;
+}
+
+th {
+    color: #e2e8f0;
+    font-weight: bold;
+}
+
+td {
+    color: #cbd5e1;
+}
+
+.amount {
+    color: #22c55e;
+    font-weight: bold;
+}
+
+tr:hover {
+    background-color: #1f2937;
+    transition: 0.2s;
+}

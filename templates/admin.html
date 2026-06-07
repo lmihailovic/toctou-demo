@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/styles/style.css">
+    <title>Admin</title>
+</head>
+<body>
+
+<div class="container">
+
+    <header class="header">
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/admin" class="active">Admin</a></li>
+            <li><a href="/add_funds" class="active">Add Funds</a></li>
+            <li><a href="/logout" class="logout">Logout</a></li>
+        </ul>
+    </header>
+
+    <div class="card">
+        <div class="user-info">
+            <h3>Admin Panel</h3>
+        </div>
+
+        {{if .Transfers}}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Sender</th>
+                    <th>Receiver</th>
+                    <th>Amount</th>
+                    <th>Timestamp</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{range .Transfers}}
+                <tr>
+                    <td >{{.ID}}</td>
+                    <td>{{.SenderName}} {{.SenderLastName}}</td>
+                    <td>{{.RecipName}} {{.RecipLastName}}</td>
+                    <td class="amount">{{printf "%.2f" .Amount}}</td>
+                    <td >{{.Timestamp.Format "2006-01-02 15:04:05"}}</td>
+                </tr>
+                {{end}}
+                </tbody>
+            </table>
+        </div>
+        {{else}}
+        <div class="empty">No recent transactions.</div>
+        {{end}}
+    </div>
+
+</div>
+</body>
+</html>
