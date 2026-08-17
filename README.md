@@ -3,6 +3,7 @@
 _Time-of-check_ to _time-of-use_ is a security vulnerability involving race conditions.
 
 A program is vulnerable to a TOCTOU race condition if it does the following:
+
 1. Checks some property or validates some data
 2. Takes some action based on this information
 
@@ -10,7 +11,7 @@ A program is vulnerable to a TOCTOU race condition if it does the following:
 
 Why does this happen?
 
-```
+```ascii
 Request A: SELECT balance -> 500 
 Request B: SELECT balance -> 500    (both see the same balance)
 Request A: UPDATE balance -500
@@ -98,6 +99,7 @@ if err != nil {
     return
 }
 ```
+
 Code snippet 1: The core logic for transferring funds using transactions. Note
 that this code is still vulnerable to the race condition.
 
@@ -110,17 +112,18 @@ This ensures that only one transfer can be executed at a time, thus preventing d
 var mu sync.Mutex
 
 func TransferHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-	
-	mu.Lock()
-	defer mu.Unlock()
-	
-	// ...
+    if r.Method != http.MethodPost {
+        http.Redirect(w, r, "/", http.StatusSeeOther)
+        return
+    }
+ 
+    mu.Lock()
+    defer mu.Unlock()
+ 
+ // ...
 ```
-Code snippet 2: The utilisation of `sync.Mutex` in `handlers/transfer.go`, preventing the race condition. 
+
+Code snippet 2: The utilisation of `sync.Mutex` in `handlers/transfer.go`, preventing the race condition.
 
 It should be noted that `sync.Mutex` is not the ideal solution, since it offers
 protection against race conditions in a single process.
@@ -130,7 +133,7 @@ load balancers) should use more rigorous solutions, like database-level locks.
 
 ### The exploit
 
-```
+```console
 $ exploit -h
 Usage of ./exploit:
   -amount string
@@ -148,40 +151,42 @@ Usage of ./exploit:
   -url string
         base URL of the vulnerable application (default "http://localhost:8080")
 ```
+
 Code snippet 3: The exploit script and its options.
 
 The race condition is exploited by creating a large number of parallel transfer requests.
 
 ```go
 func runRace(client *http.Client, cfg config) (int64, int64) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
 
-	ready := make(chan struct{})
-	var wg sync.WaitGroup
-	var successful atomic.Int64
-	var failed atomic.Int64
+    ready := make(chan struct{})
+    var wg sync.WaitGroup
+    var successful atomic.Int64
+    var failed atomic.Int64
 
-	for i := 0; i < cfg.requests; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			<-ready
+    for i := 0; i < cfg.requests; i++ {
+        wg.Add(1)
+        go func() {
+            defer wg.Done()
+            <-ready
 
-			if err := transfer(ctx, client, cfg); err != nil {
-				failed.Add(1)
-				return
-			}
-			successful.Add(1)
-		}()
-	}
+            if err := transfer(ctx, client, cfg); err != nil {
+                failed.Add(1)
+                return
+            }
+            successful.Add(1)
+        }()
+    }
 
-	close(ready)
-	wg.Wait()
+    close(ready)
+    wg.Wait()
 
-	return successful.Load(), failed.Load()
+    return successful.Load(), failed.Load()
 }
 ```
+
 Code snippet 4: Function in `attack/exploit.go` which creates the race condition.
 
 ## Running the demo
@@ -189,27 +194,32 @@ Code snippet 4: Function in `attack/exploit.go` which creates the race condition
 Make sure you have Docker and Git installed.
 
 Steps:
+
 1. Clone the repository and `cd` into it:
-```shell
-git clone https://github.com/lmihailovic/toctou-demo/ && cd toctou-demo/
-```
 
-3. Switch to the desired branch (`vuln` or `fix`):
-```shell
-git checkout vuln 
-```
-```shell
-git checkout fix
-```
+    ```sh
+    git clone https://github.com/lmihailovic/toctou-demo/ && cd toctou-demo/
+    ```
 
-2. Start the database and the application:
-```shell
-docker compose up --build
-```
+2. Switch to the desired branch (`vuln` or `fix`):
 
-3. Upon receiving the `Connection successful` and `Server started` messages, visit the application at `http://localhost:8080`.
-4. Log into the application to make sure everything works as expected.
-5. Start the `exploit.go` script (either as a binary executable or via `go run`)
+    ```sh
+    git checkout vuln 
+    ```
+
+    ```sh
+    git checkout fix
+    ```
+
+3. Start the database and the application:
+
+    ```sh
+    docker compose up --build
+    ```
+
+4. Upon receiving the `Connection successful` and `Server started` messages, visit the application at `http://localhost:8080`.
+5. Log into the application to make sure everything works as expected.
+6. Start the `exploit.go` script (either as a binary executable or via `go run`)
 
 On the `fix` branch, the script will fail to double spend, and won't be able to make the attacker's balance go into negative numbers.
 By running the exploit script on the `vuln` branch, you will be able to double spend and have negative balances.
@@ -217,13 +227,15 @@ By running the exploit script on the `vuln` branch, you will be able to double s
 ### Login data
 
 Admin account:
-```
+
+```ascii
 email: lobradovic@mail.com
 password: password1
 ```
 
 User accounts:
-```
+
+```ascii
 email: lmihailovic@mail.com
 password: password2
 
